@@ -160,7 +160,7 @@ Path Width (Lanes): $(@bind lanes NumberField(2:1:32, default=2))
 
 Safe Spots per Step: $(@bind safe_lanes NumberField(1:1:32, default=1))
 
-Simulations to Run: $(@bind simulations NumberField(100:100000, default=100000))
+Simulations to Run: $(@bind simulations NumberField(100:100000, default=1000))
 """
 
 # ╔═╡ d4cc0e2a-f9ed-4519-a9e9-5a96471a0cb8
@@ -201,22 +201,8 @@ end;
 # ╔═╡ 0267b4c6-cc36-4e0a-b144-ed4136aea89e
 frequencies = calculate_frequencies(results, players)
 
-# ╔═╡ 13a4db5d-a245-4b75-9969-f77ca15115c9
-begin
-	local bootstraps = Int(round(√(simulations)))
-	local samples = Int(round(√(bootstraps)))
-	
-	# bootstrap `results` to get st.dev for each bin
-	bootstrapped_results = [sample(results, samples) for _ in 1:bootstraps]
-	
-	# get the sample frequency distributions
-	local bootstrap_frequencies = Matrix(reduce(hcat,
-		[calculate_frequencies(bootstrap_sample, players)
-			for bootstrap_sample in bootstrapped_results]
-	)')
-	
-	freq_err = [std(col) for col in eachcol(bootstrap_frequencies)]
-end;
+# ╔═╡ 41dfe76f-5875-4840-a798-2b572c98ec4a
+freq_err = 2 * sqrt.([p*(1-p)/simulations for p in frequencies])
 
 # ╔═╡ f423c5bf-30c2-494d-9ff3-095c47386116
 md"""
@@ -236,15 +222,7 @@ end;
 simulated_odds = calculate_odds(results, players)
 
 # ╔═╡ c79df27e-d70b-49ad-91ac-2929ddb89c9b
-begin
-	# get the sample odds distributions
-	local bootstrap_odds = Matrix(reduce(hcat,
-		[calculate_odds(bootstrap_sample, players)
-			for bootstrap_sample in bootstrapped_results]
-	)')
-	
-	odds_err = [std(col) for col in eachcol(bootstrap_odds)]
-end;
+odds_err = 2 * sqrt.([p*(1-p)/simulations for p in simulated_odds])
 
 # ╔═╡ 001c77da-2e78-4075-a5d5-813c3dfdd815
 begin
@@ -261,7 +239,6 @@ begin
 	local p1 = plot!(0:players, frequencies)
 	barplot!(0:players, frequencies)
 	local e1 = errorbars!(0:players, frequencies, freq_err, freq_err, color=:red)
-	Legend(fig[1,2], [p1, e1], ["mean", "error"])
 	
 	# second plot - cumulative probability
 	local ax2 = Axis(
@@ -272,7 +249,8 @@ begin
 	)
 	local p2 = plot!(1:players, simulated_odds)
 	local e2 = errorbars!(1:players, simulated_odds, odds_err, odds_err, color=:red)
-	Legend(fig[2,2], [p2, e2], ["mean", "error"])
+	
+	Legend(fig[1,2], [p1, e1], ["mean", "95 % CI"])
 	
 	current_figure()
 end
@@ -1430,14 +1408,14 @@ version = "3.5.0+0"
 # ╠═d1fec284-c381-40ad-9667-c236598702a2
 # ╟─e146d512-c841-4535-8c7d-d12b8aec3fb1
 # ╟─91631440-0d9e-4dfd-b0b2-183a3c63213c
-# ╟─001c77da-2e78-4075-a5d5-813c3dfdd815
+# ╠═001c77da-2e78-4075-a5d5-813c3dfdd815
 # ╟─d4cc0e2a-f9ed-4519-a9e9-5a96471a0cb8
 # ╠═e1dd9af4-df1f-4506-b1fc-98d467a371cf
 # ╟─31ea2b98-c87e-42c2-8ee9-72f354be6a09
 # ╟─bce5ea0b-2611-4de2-a42d-12ded0d928a6
 # ╠═acced147-f3a2-4c51-ad97-f2ae638b4e24
 # ╠═0267b4c6-cc36-4e0a-b144-ed4136aea89e
-# ╠═13a4db5d-a245-4b75-9969-f77ca15115c9
+# ╠═41dfe76f-5875-4840-a798-2b572c98ec4a
 # ╟─f423c5bf-30c2-494d-9ff3-095c47386116
 # ╠═038d6b7c-3311-4912-bc67-754570b1dfa3
 # ╠═7409d3ff-dda3-4e09-bcd1-78c4411baed1
