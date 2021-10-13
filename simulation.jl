@@ -160,7 +160,7 @@ Path Width (Lanes): $(@bind lanes NumberField(2:1:32, default=2))
 
 Safe Spots per Step: $(@bind safe_lanes NumberField(1:1:32, default=1))
 
-Simulations to Run: $(@bind simulations NumberField(100:100000, default=1e5))
+Simulations to Run: $(@bind simulations NumberField(100:100000, default=100000))
 """
 
 # ╔═╡ d4cc0e2a-f9ed-4519-a9e9-5a96471a0cb8
