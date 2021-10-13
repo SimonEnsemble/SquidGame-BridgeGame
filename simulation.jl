@@ -4,8 +4,17 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
+        el
+    end
+end
+
 # ╔═╡ 450adc07-0529-451c-a897-f1bb2f5394a3
-using GLMakie, StatsBase
+using GLMakie,PlutoUI, StatsBase, Statistics
 
 # ╔═╡ 787a80fc-e7f9-4108-a5ed-e4f458356ca0
 md"""
@@ -48,10 +57,10 @@ begin
 	
 	# constructor
 	function Field(steps::Int, lanes::Int, safe::Int)
-		@assert safe ≥ 1 # there must be at least one safe choice per step
-		@assert safe < lanes # there must be at least one wrong choice per step
-		@assert steps ≥ 1 # the board must have at least one step
-		@assert lanes ≥ 2 # there must be actual choices at each step
+		@assert safe ≥ 1 "there must be at least one safe choice per step"
+		@assert safe < lanes "there must be at least one wrong choice per step"
+		@assert steps ≥ 1 "the board must have at least one step"
+		@assert lanes ≥ 2 "there must be actual choices at each step"
 		
 		# build the path
 		path = falses(steps, lanes)
@@ -74,14 +83,18 @@ md"""
 """
 
 # ╔═╡ 1cb34a0d-bc2a-47da-b4eb-3fd1f07cdd81
-# checks to see if a complete path has been found
-function solved(field::Field)
+"""
+	is_solved = solved(field)
+
+Checks to see if a complete path has been found for `field`.
+"""
+function solved(field::Field)::Bool
 	return field.length == field.solved
 end;
 
 # ╔═╡ 0acf160e-3132-4b7c-ab03-a071ea017dff
 """
-Simulate a single player's attempt at crossing the field in its current state.
+Simulate a single player's attempt at crossing the `field` in its current state.
 """
 function attempt_crossing!(field::Field)
 	# make guesses until guess returns false or the last step is solved
@@ -107,12 +120,12 @@ end;
 
 # ╔═╡ d1fec284-c381-40ad-9667-c236598702a2
 """
-	crossed = simulate_hopscotch(n)
+	crossed = simulate_hopscotch(players, steps, lanes, safe)
 
 Simulate one slate of players in a hopscotch game.
 Returns the number of players that got all the way across.
 """
-function simulate_hopscotch(players::Int, steps::Int, lanes::Int, safe::Int)
+function simulate_hopscotch(players::Int, steps::Int, lanes::Int, safe::Int)::Int
 	# initialize the playing field
 	field = Field(steps, lanes, safe)
 	
@@ -132,53 +145,63 @@ end;
 # ╔═╡ e146d512-c841-4535-8c7d-d12b8aec3fb1
 md"""
 ## Simulations
-
-### Parameters
 """
 
-# ╔═╡ 8379a160-deaf-4624-b47c-801da9493b86
-begin
-	players 	= 16 # how many players
-	steps 		= 16 # how long the path
-	lanes 		= 2 # how many choices per step
-	safe_lanes 	= 1 # how many of the choices are correct per step
-	simulations = 1e5 # how many simulations to run
-end;
-
-# ╔═╡ 29b8b0e2-5373-44cb-a588-4f31cd8e0705
+# ╔═╡ 91631440-0d9e-4dfd-b0b2-183a3c63213c
 md"""
-### Results
+!!! parameters
+	Use the fields below to run batches of game simulations with different versions of the rules.
+
+Number of Players: $(@bind players NumberField(1:1:128, default=16))
+
+Path Length (Steps): $(@bind steps NumberField(1:1:128, default=16))
+
+Path Width (Lanes): $(@bind lanes NumberField(2:1:32, default=2))
+
+Safe Spots per Step: $(@bind safe_lanes NumberField(1:1:32, default=1))
+
+Simulations to Run: $(@bind simulations NumberField(100:100000, default=1e5))
 """
 
-# ╔═╡ e71c48b9-700d-4f76-9ca8-b28e634d02f3
-begin
-	# simulate games
-	results = 
+# ╔═╡ d4cc0e2a-f9ed-4519-a9e9-5a96471a0cb8
+md"""
+For each game, how many players got across?
+"""
+
+# ╔═╡ e1dd9af4-df1f-4506-b1fc-98d467a371cf
+results = 
 	[simulate_hopscotch(players, steps, lanes, safe_lanes) for _ in 1:simulations]
-	
-	# calculate the per-player odds
-	simulated_odds = 
+
+# ╔═╡ 31ea2b98-c87e-42c2-8ee9-72f354be6a09
+md"""
+Minimum: $(minimum(results))
+
+Maximum: $(maximum(results))
+
+Median: $(Int(round(median(results))))
+"""
+
+# ╔═╡ f423c5bf-30c2-494d-9ff3-095c47386116
+md"""
+How likely is player $n$ to cross successfully?
+"""
+
+# ╔═╡ 7409d3ff-dda3-4e09-bcd1-78c4411baed1
+simulated_odds = 
 	[count(result -> result > players-i, results) for i in 1:players] ./ simulations
-end;
 
 # ╔═╡ 001c77da-2e78-4075-a5d5-813c3dfdd815
 begin
 	local fig = Figure()
-	local ax = Axis(
+	local ax1 = Axis(
 		fig[1, 1],
 		title="$players Players, $steps Steps, $lanes Lanes, $safe_lanes Safe",
 		xlabel="Players Crossed",
 		ylabel="Frequency"
 	)
-	hist!(results)
-	current_figure()
-end
-
-# ╔═╡ 25d8be1d-cbbf-46e5-946c-4a6df41c2504
-begin
-	local fig = Figure()
-	local ax = Axis(
-		fig[1, 1],
+	hist!(results, normalization=:probability, bins=players)
+	local ax2 = Axis(
+		fig[2, 1],
 		title = "$players Players, $steps Steps, $lanes Lanes, $safe_lanes Safe",
 		xlabel = "Player Number",
 		ylabel = "Probability of Crossing"
@@ -191,10 +214,13 @@ end
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 GLMakie = "~0.4.6"
+PlutoUI = "~0.7.16"
 StatsBase = "~0.33.11"
 """
 
@@ -525,6 +551,23 @@ deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll",
 git-tree-sha1 = "8a954fed8ac097d5be04921d595f741115c1b2ad"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+0"
+
+[[Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
+
+[[HypertextLiteral]]
+git-tree-sha1 = "f6532909bf3d40b308a0f360b6a0e626c0e263a8"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.1"
+
+[[IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.2"
 
 [[IfElse]]
 git-tree-sha1 = "28e837ff3e7a6c3cdb252ce49fb412c8eb3caeef"
@@ -914,6 +957,12 @@ deps = ["ColorSchemes", "Colors", "Dates", "Printf", "Random", "Reexport", "Stat
 git-tree-sha1 = "b084324b4af5a438cd63619fd006614b3b20b87b"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.0.15"
+
+[[PlutoUI]]
+deps = ["Base64", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
+git-tree-sha1 = "4c8a7d080daca18545c56f1cac28710c362478f3"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.16"
 
 [[PolygonOps]]
 git-tree-sha1 = "77b3d3605fc1cd0b42d95eba87dfcd2bf67d5ff6"
@@ -1308,15 +1357,17 @@ version = "3.5.0+0"
 # ╠═450adc07-0529-451c-a897-f1bb2f5394a3
 # ╟─787a80fc-e7f9-4108-a5ed-e4f458356ca0
 # ╠═c826a0a0-c034-4b33-aaee-2fc26a361e67
-# ╠═836e2445-9178-4947-9f68-604d385c95e6
+# ╟─836e2445-9178-4947-9f68-604d385c95e6
 # ╠═1cb34a0d-bc2a-47da-b4eb-3fd1f07cdd81
 # ╠═0acf160e-3132-4b7c-ab03-a071ea017dff
 # ╠═d1fec284-c381-40ad-9667-c236598702a2
 # ╟─e146d512-c841-4535-8c7d-d12b8aec3fb1
-# ╠═8379a160-deaf-4624-b47c-801da9493b86
-# ╟─29b8b0e2-5373-44cb-a588-4f31cd8e0705
-# ╠═e71c48b9-700d-4f76-9ca8-b28e634d02f3
+# ╟─91631440-0d9e-4dfd-b0b2-183a3c63213c
 # ╟─001c77da-2e78-4075-a5d5-813c3dfdd815
-# ╠═25d8be1d-cbbf-46e5-946c-4a6df41c2504
+# ╟─d4cc0e2a-f9ed-4519-a9e9-5a96471a0cb8
+# ╟─e1dd9af4-df1f-4506-b1fc-98d467a371cf
+# ╟─31ea2b98-c87e-42c2-8ee9-72f354be6a09
+# ╟─f423c5bf-30c2-494d-9ff3-095c47386116
+# ╟─7409d3ff-dda3-4e09-bcd1-78c4411baed1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
