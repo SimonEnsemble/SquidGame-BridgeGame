@@ -61,16 +61,18 @@ function simulate(L::Int, N::Int)
 	for player in 1:N
 		survived = hop!(bridge)
         if solved(bridge)
+			# if this player survived, one minus this player eliminated.
+			# if this player didn't survive, then this player was last eliminated
             return survived ? player - 1 : player
         end
 	end
-	return N
+	return N # if got this far, all were eliminated.
 end;
 
 # ╔═╡ 89e25740-5402-4dc6-868e-9e49dd08bb6c
 begin
-	N = 16
-	L = 16
+	N = 10
+	L = 20
 	nb_sims = 100000
 	
 	sim_nb_eliminated = [simulate(L, N) for i = 1:nb_sims]
@@ -84,11 +86,37 @@ begin
 	sim_probs_survival_err = 2 * sqrt.(sim_probs_survival .* (1 .- sim_probs_survival)) / nb_sims
 end
 
+# ╔═╡ fbb1fd4e-90b5-4bf3-9972-0afc5a52c600
+# prob exactly n eliminated
+function P_Eₙ(n::Int, L::Int, N::Int)
+	if n > L
+		return 0.0
+	else
+		if n == N && N < L
+			return sum([binomial(c-1, N-1) * 0.5 ^ c for c = N:L])
+		else
+			return binomial(L, n) * 0.5 ^ L
+		end
+	end
+end
+
+# ╔═╡ aa91c2ba-0368-4fe5-9d2b-46422855325b
+binomial(L, 0)
+
+# ╔═╡ e6b19b92-4e1c-4628-bdba-c2319c96e2f4
+sum([P_Eₙ(n, L, N) for n =0:N])
+
 # ╔═╡ edcdbd35-0dbb-447d-b9ed-9499e4dfe895
-exact_prob_survival(i, L) = sum([binomial(L, j) * 0.5 ^ L for j = 1:(i-1)])
+function P_Sᵢ(i, L, N)
+	s = 0.0
+	for j = 0:(i-1)
+		s += P_Eₙ(j, L, N)
+	end
+	return s
+end
 
 # ╔═╡ e922b477-b2ed-4fe8-b243-568e832ac933
-probs_survival = [exact_prob_survival(i, L) for i = 1:N]
+probs_survival = [P_Sᵢ(i, L, N) for i = 1:N]
 
 # ╔═╡ 57f5ff3f-312e-4f27-a25e-19a71eb893e1
 begin
@@ -216,9 +244,9 @@ version = "1.16.1+0"
 
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "2f294fae04aa5069a67964a3366e151e09ea7c09"
+git-tree-sha1 = "74e8234fb738c45e2af55fdbcd9bfbe00c2446fa"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.9.0"
+version = "1.8.0"
 
 [[ColorBrewer]]
 deps = ["Colors", "JSON", "Test"]
@@ -296,9 +324,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[Distributions]]
 deps = ["ChainRulesCore", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "9809cf6871ca006d5a4669136c09e77ba08bf51a"
+git-tree-sha1 = "e13d3977b559f013b3729a029119162f84e93f5b"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.20"
+version = "0.25.19"
 
 [[DocStringExtensions]]
 deps = ["LibGit2"]
@@ -804,9 +832,9 @@ version = "1.47.0+0"
 
 [[Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "98f59ff3639b3d9485a03a72f3ab35bab9465720"
+git-tree-sha1 = "a8709b968a1ea6abc2dc1967cb1db6ac9a00dfb6"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.0.6"
+version = "2.0.5"
 
 [[Pixman_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1191,6 +1219,9 @@ version = "3.5.0+0"
 # ╠═dc80351f-7048-4a66-bf57-f6beec8887b0
 # ╠═172949e2-4c23-4f9a-afa2-64df4eff8e6e
 # ╠═89e25740-5402-4dc6-868e-9e49dd08bb6c
+# ╠═fbb1fd4e-90b5-4bf3-9972-0afc5a52c600
+# ╠═aa91c2ba-0368-4fe5-9d2b-46422855325b
+# ╠═e6b19b92-4e1c-4628-bdba-c2319c96e2f4
 # ╠═edcdbd35-0dbb-447d-b9ed-9499e4dfe895
 # ╠═e922b477-b2ed-4fe8-b243-568e832ac933
 # ╠═57f5ff3f-312e-4f27-a25e-19a71eb893e1
