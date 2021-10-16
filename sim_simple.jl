@@ -8,31 +8,27 @@ using InteractiveUtils
 using Random, StatsBase, Statistics, CairoMakie, ColorSchemes
 
 # ╔═╡ 9c250a01-a32f-4d10-8100-395ca1e159f5
-set_theme!(theme_light()); update_theme!(fontsize=22)
+set_theme!(theme_light()); update_theme!(fontsize=30)
 
 # ╔═╡ bf71ffc2-e3b3-494f-beb1-12fdb012cb3c
 begin
 	struct Bridge
 	    L::Int
-	    safe_panels::Array{Bool, 2}
-	    observed::Array{Union{Int, Missing}}
+	    safe_panels::Array{Int, 1}
+	    visits::Array{Union{Int, Missing}}
 	end
 	
 	function Bridge(L::Int)
-	    safe_panels = falses(2, L)
-	    for step in 1:L
-	        safe_panel = sample(1:2)
-	        safe_panels[safe_panel, step] = true
-	    end
+	    safe_panels = [sample(1:2) for col = 1:L]
 	
-	    observed = [missing for col in 1:L]
+	    visits = [missing for col in 1:L]
 	    
-	    return Bridge(L, safe_panels, observed)
+	    return Bridge(L, safe_panels, visits)
 	end
 end
 
 # ╔═╡ b8829ab8-7975-4dd0-a175-8a229d86c091
-solved(bridge::Bridge) = ! ismissing(bridge.observed[bridge.L])
+solved(bridge::Bridge) = ! ismissing(bridge.visits[end])
 
 # ╔═╡ dc80351f-7048-4a66-bf57-f6beec8887b0
 function hop!(bridge::Bridge)
@@ -40,13 +36,13 @@ function hop!(bridge::Bridge)
         return true
     end
 
-    next_column_to_hop_to = findfirst(ismissing.(bridge.observed))
+    next_column_to_hop_to = findfirst(ismissing.(bridge.visits))
 	
     panel_to_hop_on = sample(1:2)
 	
-    bridge.observed[next_column_to_hop_to] = panel_to_hop_on
+    bridge.visits[next_column_to_hop_to] = panel_to_hop_on
     
-    if bridge.safe_panels[panel_to_hop_on, next_column_to_hop_to]
+    if bridge.safe_panels[next_column_to_hop_to] == panel_to_hop_on
         hop!(bridge)
     else
         return false
@@ -71,8 +67,8 @@ end;
 
 # ╔═╡ 89e25740-5402-4dc6-868e-9e49dd08bb6c
 begin
-	N = 10
-	L = 20
+	N = 16
+	L = 8
 	nb_sims = 100000
 	
 	sim_nb_eliminated = [simulate(L, N) for i = 1:nb_sims]
@@ -142,7 +138,7 @@ begin
 end
 
 # ╔═╡ 59c7692a-4bcf-4ced-8f44-07c86414276c
-save("sim_vs_theory.pdf", fig)
+save("sim_vs_theory_N$(N)_L$(L).pdf", fig)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
