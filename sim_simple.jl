@@ -20,19 +20,17 @@ begin
 	
 	function Bridge(L::Int)
 	    safe_panels = [sample(1:2) for col = 1:L]
-	
 	    visits = [missing for col in 1:L]
-	    
 	    return Bridge(L, safe_panels, visits)
 	end
 end
 
 # ╔═╡ b8829ab8-7975-4dd0-a175-8a229d86c091
-solved(bridge::Bridge) = ! ismissing(bridge.visits[end])
+fully_observed(bridge::Bridge) = ! ismissing(bridge.visits[end])
 
 # ╔═╡ dc80351f-7048-4a66-bf57-f6beec8887b0
 function hop!(bridge::Bridge)
-	if solved(bridge)
+	if fully_observed(bridge)
         return true
     end
 
@@ -56,7 +54,7 @@ function simulate(L::Int, N::Int)
 	
 	for player in 1:N
 		survived = hop!(bridge)
-        if solved(bridge)
+        if fully_observed(bridge)
 			# if this player survived, one minus this player eliminated.
 			# if this player didn't survive, then this player was last eliminated
             return survived ? player - 1 : player
