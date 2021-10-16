@@ -35,7 +35,7 @@ end
 solved(bridge::Bridge) = ! ismissing(bridge.observed[bridge.L])
 
 # ╔═╡ dc80351f-7048-4a66-bf57-f6beec8887b0
-function attempt_crossing!(bridge::Bridge)
+function hop!(bridge::Bridge)
 	if solved(bridge)
         return true
     end
@@ -47,7 +47,7 @@ function attempt_crossing!(bridge::Bridge)
     bridge.observed[next_column_to_hop_to] = panel_to_hop_on
     
     if bridge.safe_panels[panel_to_hop_on, next_column_to_hop_to]
-        attempt_crossing!(bridge)
+        hop!(bridge)
     else
         return false
     end
@@ -59,7 +59,7 @@ function simulate(L::Int, N::Int)
     bridge = Bridge(L)
 	
 	for player in 1:N
-		survived = attempt_crossing!(bridge)
+		survived = hop!(bridge)
         if solved(bridge)
             return survived ? player - 1 : player
         end
