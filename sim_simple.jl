@@ -98,8 +98,8 @@ begin
 	ax1 = Axis(
 		fig[1, 1],
 		title="N = $N, L = $L",
-		xlabel="player",
-		ylabel="probability of survival",
+		xlabel="player, i",
+		ylabel="probability of survival, P(Sᵢ)",
 		xticks=1:N,
 		yticks=[0.25 * i for i = 0:4]
 	)
