@@ -60,7 +60,7 @@ function simulate(L::Int, N::Int)
         end
 	end
 	return N # if got this far, all were eliminated.
-end;
+end
 
 # ╔═╡ 89e25740-5402-4dc6-868e-9e49dd08bb6c
 begin
@@ -167,7 +167,7 @@ begin
 		fig2[1, 1],
 		title="N = $N",
 		xlabel="bridge length, L",
-		ylabel="expected # of survivors, E(θ)",
+		ylabel="expected # of survivors, E[θ]",
 		xticks=[0,10,20,30,40,50],
 		yticks=[4*i for i = 0:4]
 	)
@@ -175,7 +175,7 @@ begin
 	ylims!(-0.2, nothing)
 	hlines!(ax2, N, color="green", label="all survive")
 	hlines!(ax2, 0, color="red", label="none survive")
-	scatter!(Ls, [Eθ(L_i, N) for L_i in Ls], linewidth=6, color=ColorSchemes.fruitpunch[1])
+	barplot!(Ls, [Eθ(L_i, N) for L_i in Ls], linewidth=6, color=ColorSchemes.fruitpunch[1])
 
 	axislegend(position=:rc)
 	fig2
