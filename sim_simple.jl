@@ -13,20 +13,19 @@ set_theme!(theme_light()); update_theme!(fontsize=30)
 # ╔═╡ bf71ffc2-e3b3-494f-beb1-12fdb012cb3c
 begin
 	struct Bridge
-	    L::Int
 	    safe_panels::Array{Int, 1}
-	    visits::Array{Union{Int, Missing}}
+	    observed::Array{Bool}
 	end
 	
 	function Bridge(L::Int)
 	    safe_panels = [sample(1:2) for col = 1:L]
-	    visits = [missing for col in 1:L]
-	    return Bridge(L, safe_panels, visits)
+	    observed = [false for col in 1:L]
+	    return Bridge(safe_panels, observed)
 	end
 end
 
 # ╔═╡ b8829ab8-7975-4dd0-a175-8a229d86c091
-fully_observed(bridge::Bridge) = ! ismissing(bridge.visits[end])
+fully_observed(bridge::Bridge) = bridge.observed[end]
 
 # ╔═╡ dc80351f-7048-4a66-bf57-f6beec8887b0
 function hop!(bridge::Bridge)
@@ -34,11 +33,11 @@ function hop!(bridge::Bridge)
         return true
     end
 
-    next_column_to_hop_to = findfirst(ismissing.(bridge.visits))
+    next_column_to_hop_to = findfirst(.! bridge.observed)
 	
     panel_to_hop_on = sample(1:2)
 	
-    bridge.visits[next_column_to_hop_to] = panel_to_hop_on
+    bridge.observed[next_column_to_hop_to] = true
     
     if bridge.safe_panels[next_column_to_hop_to] == panel_to_hop_on
         hop!(bridge)
@@ -66,7 +65,7 @@ end;
 # ╔═╡ 89e25740-5402-4dc6-868e-9e49dd08bb6c
 begin
 	N = 16
-	L = 8
+	L = 32
 	nb_sims = 100000
 	
 	sim_nb_eliminated = [simulate(L, N) for i = 1:nb_sims]
@@ -78,6 +77,12 @@ begin
 	sim_probs_survival
 	
 	sim_probs_survival_err = 2 * sqrt.(sim_probs_survival .* (1 .- sim_probs_survival)) / nb_sims
+end
+
+# ╔═╡ cdf0ca6e-46ba-411c-b128-2baea0f6aa07
+begin
+	sim_nb_survived   = N .- sim_nb_eliminated
+	Eθ_sim = mean(sim_nb_survived)
 end
 
 # ╔═╡ fbb1fd4e-90b5-4bf3-9972-0afc5a52c600
@@ -127,8 +132,10 @@ begin
 	)
 	ylims!(-.02, 1.02)
 	xlims!(0.5, N+0.5)
-	barplot!(1:N, probs_survival, color=ColorSchemes.mint[1], label="theory")
-	scatter!(1:N, sim_probs_survival, color=ColorSchemes.mint[end], markersize=10, label="simulation")
+	barplot!(1:N, probs_survival, 
+		color=ColorSchemes.fruitpunch[1], label="theory")
+	scatter!(1:N, sim_probs_survival, 
+		color="black", markersize=10, label="simulation")
 	errorbars!(1:N, sim_probs_survival, sim_probs_survival_err, sim_probs_survival_err, color=:red)
 	axislegend(position=:lt)
 
@@ -137,6 +144,45 @@ end
 
 # ╔═╡ 59c7692a-4bcf-4ced-8f44-07c86414276c
 save("sim_vs_theory_N$(N)_L$(L).pdf", fig)
+
+# ╔═╡ d0fe1298-8550-4efc-affb-11e7b104cc87
+function Eθ(L::Int, N::Int)
+	θ = 0.0
+	for n = 0:N
+		θ += (N - n) * P_Eₙ(n, L, N)
+	end
+	return θ
+end
+
+# ╔═╡ c4ec3b9c-7157-4b80-9c71-10e9f5307daa
+Eθ(L, N)
+
+# ╔═╡ 84dd0f2c-8b35-4512-a996-d29ed44fab15
+begin
+	Ls = 0:50	
+	fig2 = Figure()
+	
+	# first plot - frequency distribution
+	ax2 = Axis(
+		fig2[1, 1],
+		title="N = $N",
+		xlabel="bridge length, L",
+		ylabel="expected # of survivors, E(θ)",
+		xticks=[0,10,20,30,40,50],
+		yticks=[4*i for i = 0:4]
+	)
+	xlims!(-0.4, maximum(Ls)+0.4)
+	ylims!(-0.2, nothing)
+	hlines!(ax2, N, color="green", label="all survive")
+	hlines!(ax2, 0, color="red", label="none survive")
+	scatter!(Ls, [Eθ(L_i, N) for L_i in Ls], linewidth=6, color=ColorSchemes.fruitpunch[1])
+
+	axislegend(position=:rc)
+	fig2
+end
+
+# ╔═╡ 12be8d50-cad6-4dd6-8a97-ce13b0ed3f24
+save("expected_theta.pdf", fig2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1213,6 +1259,7 @@ version = "3.5.0+0"
 # ╠═dc80351f-7048-4a66-bf57-f6beec8887b0
 # ╠═172949e2-4c23-4f9a-afa2-64df4eff8e6e
 # ╠═89e25740-5402-4dc6-868e-9e49dd08bb6c
+# ╠═cdf0ca6e-46ba-411c-b128-2baea0f6aa07
 # ╠═fbb1fd4e-90b5-4bf3-9972-0afc5a52c600
 # ╠═aa91c2ba-0368-4fe5-9d2b-46422855325b
 # ╠═e6b19b92-4e1c-4628-bdba-c2319c96e2f4
@@ -1220,5 +1267,9 @@ version = "3.5.0+0"
 # ╠═e922b477-b2ed-4fe8-b243-568e832ac933
 # ╠═57f5ff3f-312e-4f27-a25e-19a71eb893e1
 # ╠═59c7692a-4bcf-4ced-8f44-07c86414276c
+# ╠═d0fe1298-8550-4efc-affb-11e7b104cc87
+# ╠═c4ec3b9c-7157-4b80-9c71-10e9f5307daa
+# ╠═84dd0f2c-8b35-4512-a996-d29ed44fab15
+# ╠═12be8d50-cad6-4dd6-8a97-ce13b0ed3f24
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
