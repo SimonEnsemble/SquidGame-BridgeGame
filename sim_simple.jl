@@ -13,59 +13,62 @@ set_theme!(theme_light()); update_theme!(fontsize=30)
 # ╔═╡ bf71ffc2-e3b3-494f-beb1-12fdb012cb3c
 begin
 	struct Bridge
+		L::Int
 	    safe_panels::Array{Int, 1}
-	    observed::Array{Bool}
+	    observed::Array{Bool, 1}
 	end
 	
 	function Bridge(L::Int)
 	    safe_panels = [sample(1:2) for col = 1:L]
 	    observed = [false for col in 1:L]
-	    return Bridge(safe_panels, observed)
+	    return Bridge(L, safe_panels, observed)
 	end
 end
 
-# ╔═╡ b8829ab8-7975-4dd0-a175-8a229d86c091
-fully_observed(bridge::Bridge) = bridge.observed[end]
-
 # ╔═╡ dc80351f-7048-4a66-bf57-f6beec8887b0
-function hop!(bridge::Bridge)
-	if fully_observed(bridge)
-        return true
-    end
+function hop!(bridge::Bridge, c::Int)
+	if bridge.observed[c]
+		return true
+	else
+		panel_to_hop_on = sample(1:2)
+		bridge.observed[c] = true
+    	if bridge.safe_panels[c] == panel_to_hop_on
+        	return true
+		else
+			return false
+		end
+	end
+end
 
-    next_column_to_hop_to = findfirst(.! bridge.observed)
-	
-    panel_to_hop_on = sample(1:2)
-	
-    bridge.observed[next_column_to_hop_to] = true
-    
-    if bridge.safe_panels[next_column_to_hop_to] == panel_to_hop_on
-        hop!(bridge)
-    else
-        return false
-    end
+# ╔═╡ 263282de-36a7-4b67-9041-0896f94e1220
+function traverse!(bridge::Bridge)
+	for c = 1:bridge.L
+		survived = hop!(bridge, c)
+		if ! survived
+			return false
+		end
+	end
+	return true
 end
 
 # ╔═╡ 172949e2-4c23-4f9a-afa2-64df4eff8e6e
-# return number eliminated
+# return number of players that were eliminated
 function simulate(L::Int, N::Int)
     bridge = Bridge(L)
 	
-	for player in 1:N
-		survived = hop!(bridge)
-        if fully_observed(bridge)
-			# if this player survived, one minus this player eliminated.
-			# if this player didn't survive, then this player was last eliminated
-            return survived ? player - 1 : player
+	for p = 1:N
+		survived = traverse!(bridge)
+		if survived
+            return p - 1
         end
 	end
-	return N # if got this far, all were eliminated.
+	return N # if got this far, all eliminated
 end
 
 # ╔═╡ 89e25740-5402-4dc6-868e-9e49dd08bb6c
 begin
 	N = 16
-	L = 32
+	L = 8
 	nb_sims = 100000
 	
 	sim_nb_eliminated = [simulate(L, N) for i = 1:nb_sims]
@@ -1255,8 +1258,8 @@ version = "3.5.0+0"
 # ╠═e1ee796a-2e11-11ec-0fdc-a3b6c2ae2251
 # ╠═9c250a01-a32f-4d10-8100-395ca1e159f5
 # ╠═bf71ffc2-e3b3-494f-beb1-12fdb012cb3c
-# ╠═b8829ab8-7975-4dd0-a175-8a229d86c091
 # ╠═dc80351f-7048-4a66-bf57-f6beec8887b0
+# ╠═263282de-36a7-4b67-9041-0896f94e1220
 # ╠═172949e2-4c23-4f9a-afa2-64df4eff8e6e
 # ╠═89e25740-5402-4dc6-868e-9e49dd08bb6c
 # ╠═cdf0ca6e-46ba-411c-b128-2baea0f6aa07
