@@ -5,10 +5,13 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ e1ee796a-2e11-11ec-0fdc-a3b6c2ae2251
-using Random, StatsBase, Statistics, CairoMakie, ColorSchemes
+using Random, StatsBase, Statistics, CairoMakie, ColorSchemes, Colors
 
 # ╔═╡ 9c250a01-a32f-4d10-8100-395ca1e159f5
 set_theme!(theme_light()); update_theme!(fontsize=30)
+
+# ╔═╡ 6e4423db-15c6-4cc6-bd68-72494374aa9d
+osu_orange = RGB(215/255, 63/255, 9/255)
 
 # ╔═╡ bf71ffc2-e3b3-494f-beb1-12fdb012cb3c
 begin
@@ -68,7 +71,7 @@ end
 # ╔═╡ 89e25740-5402-4dc6-868e-9e49dd08bb6c
 begin
 	N = 16
-	L = 8
+	L = 32
 	nb_sims = 100000
 	
 	sim_nb_eliminated = [simulate(L, N) for i = 1:nb_sims]
@@ -120,6 +123,9 @@ end
 # ╔═╡ e922b477-b2ed-4fe8-b243-568e832ac933
 probs_survival = [P_Sᵢ(i, L, N) for i = 1:N]
 
+# ╔═╡ 286fb52d-9f42-4f71-ab62-1f96e0223adb
+ColorSchemes.fruitpunch[1].b * 255
+
 # ╔═╡ 57f5ff3f-312e-4f27-a25e-19a71eb893e1
 begin
 	fig = Figure()
@@ -136,9 +142,9 @@ begin
 	ylims!(-.02, 1.02)
 	xlims!(0.5, N+0.5)
 	barplot!(1:N, probs_survival, 
-		color=ColorSchemes.fruitpunch[1], label="theory")
+		color=osu_orange, label="theory")
 	scatter!(1:N, sim_probs_survival, 
-		color="black", markersize=10, label="simulation")
+		color="black", markersize=12, label="simulation")
 	errorbars!(1:N, sim_probs_survival, sim_probs_survival_err, sim_probs_survival_err, color=:red)
 	axislegend(position=:lt)
 
@@ -176,10 +182,10 @@ begin
 	)
 	xlims!(-0.4, maximum(Ls)+0.4)
 	ylims!(-0.2, nothing)
-	hlines!(ax2, N, color="green", label="all survive")
-	hlines!(ax2, 0, color="red", label="none survive")
-	barplot!(Ls, [Eθ(L_i, N) for L_i in Ls], linewidth=6, color=ColorSchemes.fruitpunch[1])
-
+	
+	barplot!(Ls, [Eθ(L_i, N) for L_i in Ls], linewidth=6, color=osu_orange)
+	hlines!(ax2, N, color="black", label="all survive", linestyle=:dash)
+	# hlines!(ax2, 0, color="black", label="none survive",linestyle=:dash)
 	axislegend(position=:rc)
 	fig2
 end
@@ -192,6 +198,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
@@ -199,6 +206,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 CairoMakie = "~0.6.5"
 ColorSchemes = "~3.15.0"
+Colors = "~0.12.8"
 StatsBase = "~0.33.11"
 """
 
@@ -1257,6 +1265,7 @@ version = "3.5.0+0"
 # ╔═╡ Cell order:
 # ╠═e1ee796a-2e11-11ec-0fdc-a3b6c2ae2251
 # ╠═9c250a01-a32f-4d10-8100-395ca1e159f5
+# ╠═6e4423db-15c6-4cc6-bd68-72494374aa9d
 # ╠═bf71ffc2-e3b3-494f-beb1-12fdb012cb3c
 # ╠═dc80351f-7048-4a66-bf57-f6beec8887b0
 # ╠═263282de-36a7-4b67-9041-0896f94e1220
@@ -1268,6 +1277,7 @@ version = "3.5.0+0"
 # ╠═e6b19b92-4e1c-4628-bdba-c2319c96e2f4
 # ╠═edcdbd35-0dbb-447d-b9ed-9499e4dfe895
 # ╠═e922b477-b2ed-4fe8-b243-568e832ac933
+# ╠═286fb52d-9f42-4f71-ab62-1f96e0223adb
 # ╠═57f5ff3f-312e-4f27-a25e-19a71eb893e1
 # ╠═59c7692a-4bcf-4ced-8f44-07c86414276c
 # ╠═d0fe1298-8550-4efc-affb-11e7b104cc87
