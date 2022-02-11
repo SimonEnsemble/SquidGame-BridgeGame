@@ -1,3 +1,1 @@
-# SquidGame-BridgeGame
-
-Mathematical treatment of the bridge-crossing game from Squid Game.
+# Simulation of the Bridge Survival Game in Squid Game
